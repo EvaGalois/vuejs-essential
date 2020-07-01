@@ -1,7 +1,7 @@
 <template>
   <div class="row">
     <div class="col-md-4 col-md-offset-4 floating-box">
-      <!-- 消息组建 -->
+      <!-- 消息组件 -->
       <Message :show.sync="msgShow" :type="msgType" :msg="msg"/>
       <div class="panel panel-default">
         <div class="panel-heading">
@@ -28,9 +28,11 @@
           <div class="thumbnail" title="点击图片重新获取验证码" @click="getCaptcha">
             <div class="captcha vcenter" v-html="captchaTpl"></div>
           </div>
-          <button type="submit" class="btn btn-lg btn-success btn-block" @click="register">
-            <i class="fa fa-btn fa-sign-in"></i> 注册
-          </button>
+          <span @click='register'>
+            <button type="submit" class="btn btn-lg btn-success btn-block">
+              <i class="fa fa-btn fa-sign-in"></i> 注册
+            </button>
+          </span>
         </div>
       </div>
     </div>
@@ -84,7 +86,7 @@ export default {
           password: this.password,
           avatar: `https://api.adorable.io/avatars/200/${this.username}.png`
         }
-        const localUser = ls.getItem('user')
+        const localUser = this.$store.state.user
 
         if (localUser) {
           if (localUser.name === user.name) {
@@ -98,7 +100,7 @@ export default {
       }
     },
     login(user) {
-      ls.setItem('user', user)
+      this.$store.dispatch('login', user)
       this.showMsg('注册成功', 'success')
     },
     showMsg(msg, type = 'warning') {

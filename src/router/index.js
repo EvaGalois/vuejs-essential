@@ -3,6 +3,12 @@ import Router from 'vue-router'
 // 引入 ./routes.js 的默认值
 import routes from './routes'
 
+// 重写路由的 push 方法，这个是 vue-cli4.x 以上的一个坑
+const routerPush = Router.prototype.push
+Router.prototype.push = function push(location) {
+  return routerPush.call(this, location).catch(error => error)
+}
+
 Vue.use(Router)
 
 // 这里删除了原来的 routes 常量
@@ -10,6 +16,19 @@ Vue.use(Router)
 const router =  new Router({
   mode: 'history',
   linkExactActiveClass: 'active',
+  // 指定滚动行为
+  scrollBehavior(to, from, savedPosition) {
+    if (to.hash) {
+      // 有锚点时，滚动到锚点
+      return { selector: to.hash }
+    } else if (savedPosition) {
+      // 有保存位置时，滚动到保存位置
+      return savedPosition
+    } else {
+      // 默认滚动到页面顶部
+      return { x: 0, y: 0 }
+    }
+  },
   routes
 })
 
@@ -19,6 +38,10 @@ router.beforeEach((to, from, next) => {
   const auth = store.state.auth
   // 获取目标页面路由参数里的 articleId
   const articleId = to.params.articleId
+  // 当前用户
+  const user = store.state.user && store.state.user.name
+  // 路由参数中的用户
+  const paramUser = to.params.user
 
   app.$message.hide()
 
@@ -26,7 +49,9 @@ router.beforeEach((to, from, next) => {
     (auth && to.path.indexOf('/auth/') !== -1) ||
     (!auth && to.meta.auth) ||
     // 有 articleId 且不能找到与其对应的文章时，跳转到首页
-    (articleId && !store.getters.getArticleById(articleId))
+    (articleId && !store.getters.getArticleById(articleId)) ||
+    // 路由参数中的用户不为当前用户，且找不到与其对应的文章时，跳转到首页
+    (paramUser && paramUser !== user && !store.getters.getArticlesByUid(null, paramUser).length)
   ) {
     next('/')
   } else {
